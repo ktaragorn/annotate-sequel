@@ -42,7 +42,30 @@ class AnnotateSequel
         output = String.new
         table.to_s.each_line { |line| output << "# #{line}" }
 
+        indexes = process_indexes(klass)
+
+        if indexes.any?
+          output << "\n# Indexes:\n"
+          output << "#\t" << indexes.join("\n#\t")
+        end
         output << "\n\n"
+      end
+
+      def process_indexes(model)
+        model.db.indexes(model.table_name).map do |name, index|
+          process_index name, index
+        end
+      end
+
+      # following this format from i think mysql
+      # UNIQUE KEY `country` (`country`,`tag`)
+      # KEY `index_histories_user` (`user_id`)
+      def process_index(name, index)
+        if index[:unique]
+          "UNIQUE INDEX '#{name}' ('#{index[:columns].join("', '")}')"
+        else
+          "INDEX '#{name}' ('#{index[:columns].join("', '")}')"
+        end
       end
 
       def process_fks(model)
